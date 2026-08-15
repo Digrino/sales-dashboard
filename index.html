@@ -354,7 +354,9 @@
 </div>
 </header>
 <!-- Product Grid -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-md mb-lg" id="product-grid"></div>
+<div class="overflow-y-auto custom-scrollbar mb-lg pr-1" style="max-height: 38vh;">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-sm" id="product-grid"></div>
+</div>
 
 <!-- Product Edit/Add Modal -->
 <div class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-md" id="product-modal">
@@ -1174,20 +1176,20 @@
                 products.forEach(product => {
                     const qtyId = `qty-${product.id}`;
                     const card = document.createElement('div');
-                    card.className = 'bg-surface-container-lowest border border-outline-variant rounded-xl p-sm shadow-sm flex flex-col gap-sm relative group';
+                    card.className = 'bg-surface-container-lowest border border-outline-variant rounded-xl p-xs shadow-sm flex flex-col gap-xs relative group';
                     card.innerHTML = `
-                        ${isManagerMode ? `<button type="button" class="edit-product-btn absolute top-2 right-2 w-7 h-7 rounded-lg bg-surface-container-lowest/90 border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary flex items-center justify-center shadow-sm z-10" data-product-id="${product.id}" title="Editar produto">
-                            <span class="material-symbols-outlined text-[16px]">edit</span>
+                        ${isManagerMode ? `<button type="button" class="edit-product-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-lg bg-surface-container-lowest/90 border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary flex items-center justify-center shadow-sm z-10" data-product-id="${product.id}" title="Editar produto">
+                            <span class="material-symbols-outlined text-[14px]">edit</span>
                         </button>` : ''}
-                        <img alt="${product.name}" class="w-full h-32 object-cover rounded-lg" src="${product.image}"/>
+                        <img alt="${product.name}" class="w-full h-16 object-cover rounded-lg" src="${product.image}"/>
                         <div>
-                            <h3 class="font-headline-sm text-[16px] text-on-surface truncate">${product.name}</h3>
-                            <p class="font-data-mono text-primary font-semibold">${formatCurrency(product.price)}</p>
+                            <h3 class="font-headline-sm text-[13px] leading-tight text-on-surface truncate">${product.name}</h3>
+                            <p class="font-data-mono text-[13px] text-primary font-semibold">${formatCurrency(product.price)}</p>
                         </div>
                         <div class="flex items-center gap-xs mt-auto">
-                            <input class="w-16 bg-surface border border-outline-variant rounded-lg px-sm py-sm font-data-mono text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all h-[36px]" id="${qtyId}" min="1" type="number" value="1"/>
-                            <button class="flex-1 bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg py-sm h-[36px] flex items-center justify-center gap-xs font-label-caps text-label-caps shadow-sm whitespace-nowrap add-btn" data-product-id="${product.id}" data-qty-id="${qtyId}">
-                                <span class="material-symbols-outlined text-[16px]">add</span> Adicionar
+                            <input class="w-14 bg-surface border border-outline-variant rounded-lg px-xs py-xs font-data-mono text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all h-[30px] text-[13px]" id="${qtyId}" min="1" type="number" value="1"/>
+                            <button class="flex-1 bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg h-[30px] flex items-center justify-center gap-xs font-label-caps text-[11px] shadow-sm whitespace-nowrap add-btn" data-product-id="${product.id}" data-qty-id="${qtyId}">
+                                <span class="material-symbols-outlined text-[14px]">add</span> Add
                             </button>
                         </div>
                     `;
@@ -1199,10 +1201,10 @@
                     const addCard = document.createElement('button');
                     addCard.type = 'button';
                     addCard.id = 'add-product-card';
-                    addCard.className = 'border-2 border-dashed border-outline-variant rounded-xl p-sm flex flex-col items-center justify-center gap-xs text-outline hover:text-primary hover:border-primary transition-colors duration-150 min-h-[210px]';
+                    addCard.className = 'border-2 border-dashed border-outline-variant rounded-xl p-xs flex flex-col items-center justify-center gap-xs text-outline hover:text-primary hover:border-primary transition-colors duration-150 min-h-[120px]';
                     addCard.innerHTML = `
-                        <span class="material-symbols-outlined text-[32px]">add_circle</span>
-                        <span class="font-label-caps text-label-caps">Novo Produto</span>
+                        <span class="material-symbols-outlined text-[24px]">add_circle</span>
+                        <span class="font-label-caps text-[11px]">Novo Produto</span>
                     `;
                     productGrid.appendChild(addCard);
                 }
