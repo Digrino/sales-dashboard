@@ -515,7 +515,7 @@
 <script>
         // --- Integração com Google Sheets (via Google Apps Script Web App) ---
         // Cole aqui a URL da Web App depois de publicar o Apps Script (ver instruções fornecidas).
-        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyVki77oXob_ZIxLCsLo4nQOccc9dqAp9-6lrixLuIHz7u6hDmJAX4p4DvEsc1LMZuq/exec';
+        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyur0s50nd7QkRCG848QXvqMytEAqrQkqDl9SmwIAS5qAS8_0xwe84LMoIPDUaEPTq1/exec';
 
         const api = {
             async load() {
@@ -822,23 +822,33 @@
             employeeFormDelete.addEventListener('click', async () => {
                 if (!editingEmployeeId) return;
                 const emp = employees.find(x => x.id === editingEmployeeId);
-                if (!confirm(`Remover "${emp.name}" da lista de funcionários?`)) return;
+                const salesCount = salesHistory.filter(s => s.employeeId === editingEmployeeId).length;
+                const warning = salesCount > 0
+                    ? `Remover "${emp.name}"? Isso também vai apagar o histórico de vendas dele (${salesCount} venda${salesCount > 1 ? 's' : ''}) da planilha. Essa ação não pode ser desfeita.`
+                    : `Remover "${emp.name}" da lista de funcionários?`;
+                if (!confirm(warning)) return;
 
                 employeeFormDelete.disabled = true;
                 const result = await api.send('deleteEmployee', { id: editingEmployeeId });
 
                 if (result.ok || result.offline) {
                     employees.splice(employees.findIndex(x => x.id === editingEmployeeId), 1);
+                    // Remove também o histórico de vendas local desse funcionário, já que o
+                    // backend apagou as linhas correspondentes na aba "Vendas" da planilha.
+                    salesHistory = salesHistory.filter(s => s.employeeId !== editingEmployeeId);
                     if (selectedEmployeeId === editingEmployeeId) {
                         selectedEmployeeId = null;
                         activeEmployeeLabel.textContent = 'Selecione um funcionário para iniciar a venda.';
                         updateCartUI();
-                        updateHistoryUI();
-                        updateFullHistoryUI();
                     }
+                    updateHistoryUI();
+                    updateFullHistoryUI();
                     renderEmployeeList();
                     closeEmployeeModal();
-                    toast('Funcionário removido.');
+                    const deletedCount = typeof result.deletedSales === 'number' ? result.deletedSales : salesCount;
+                    toast(deletedCount > 0
+                        ? `Funcionário removido. ${deletedCount} venda${deletedCount > 1 ? 's' : ''} apagada${deletedCount > 1 ? 's' : ''} da planilha.`
+                        : 'Funcionário removido da planilha.');
                 } else {
                     employeeModalError.textContent = 'Não foi possível remover: ' + (result.error || 'erro desconhecido') + '. Tente novamente.';
                     employeeModalError.classList.remove('hidden');
