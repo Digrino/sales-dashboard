@@ -246,6 +246,10 @@
 <span class="material-symbols-outlined">history</span>
 <span class="font-label-caps text-label-caps">Histórico de Vendas</span>
 </a>
+<a class="nav-tab flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors duration-150 hidden" data-tab="deposits" href="#" id="nav-tab-deposits">
+<span class="material-symbols-outlined">savings</span>
+<span class="font-label-caps text-label-caps">Histórico de Depósitos</span>
+</a>
 </div>
 <!-- Theme Toggle -->
 <div class="pt-sm mt-sm border-t border-outline-variant">
@@ -462,6 +466,40 @@
 </div>
 </main>
 
+<!-- View: Deposits History (full page, manager only) -->
+<main class="flex-1 flex-col p-xl overflow-hidden bg-background hidden" id="view-deposits">
+<header class="mb-lg flex justify-between items-end gap-md">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Histórico de Depósitos</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Depósitos confirmados pelos funcionários para a empresa.</p>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant" for="deposits-filter-employee">Filtrar por funcionário</label>
+<select class="bg-surface border border-outline-variant rounded-lg px-md py-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all min-w-[220px]" id="deposits-filter-employee">
+<option value="">Todos os funcionários</option>
+</select>
+</div>
+</header>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl flex flex-col overflow-hidden shadow-sm">
+<div class="bg-surface-container-low border-b border-outline-variant px-lg py-sm grid grid-cols-[100px_140px_100px_100px_120px_120px_140px] gap-md items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Depósito</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Funcionário</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-center">Data</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-center">Horário</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-right">Total Vendido</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-right">Comissão</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-right">Depositado</span>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-sm" id="deposits-container">
+<div class="h-full flex flex-col items-center justify-center text-outline opacity-60" id="empty-deposits-state">
+<span class="material-symbols-outlined text-[48px] mb-sm font-light">savings</span>
+<p class="font-body-md text-body-md">Nenhum depósito confirmado ainda.</p>
+</div>
+<ul class="flex flex-col gap-xs hidden" id="deposits-list"></ul>
+</div>
+</div>
+</main>
+
 <!-- Right Sidebar: History & Commission (Manager only) -->
 <aside class="w-[340px] border-l border-outline-variant bg-surface-container-lowest flex-col z-30 shadow-[-4px_0_12px_rgba(0,0,0,0.02)] flex" id="right-sidebar">
 <!-- Sidebar Header -->
@@ -515,6 +553,11 @@
 <span class="font-data-mono text-data-mono font-bold text-primary" id="disp-company-cut">R$ 0,00</span>
 </div>
 </div>
+<button class="w-full mt-md bg-tertiary-container text-on-tertiary-container disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity duration-150 rounded-lg px-md py-sm flex items-center justify-center gap-xs font-label-caps text-label-caps" disabled="" id="btn-confirm-deposit" type="button">
+<span class="material-symbols-outlined text-[18px]">savings</span>
+                    Confirmar Depósito para a Empresa
+                </button>
+<p class="font-body-sm text-[10px] text-on-surface-variant mt-xs text-center">Zera o histórico do dia e registra o depósito para a gerência.</p>
 </div>
 </aside>
 </div>
@@ -522,7 +565,7 @@
 <script>
         // --- Integração com Google Sheets (via Google Apps Script Web App) ---
         // Cole aqui a URL da Web App depois de publicar o Apps Script (ver instruções fornecidas).
-        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyur0s50nd7QkRCG848QXvqMytEAqrQkqDl9SmwIAS5qAS8_0xwe84LMoIPDUaEPTq1/exec';
+        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxlbddRDX75w4a3CHirG0JE45gNCeZ_Cre7EYqVm6bLLBXU6kDTN-_BR88qLKh5j0R5/exec';
 
         const api = {
             async load() {
@@ -558,6 +601,10 @@
             let salesHistory = [];
             let saleCounter = 1001;
             let productCounter = 5;
+
+            // --- Deposits (fechamento de caixa por funcionário) ---
+            let deposits = [];
+            let depositCounter = 1;
 
             // --- Products (dados de exemplo usados apenas se a planilha ainda não estiver conectada) ---
             let products = [
@@ -653,7 +700,15 @@
             const views = {
                 dashboard: document.getElementById('view-dashboard'),
                 history: document.getElementById('view-history'),
+                deposits: document.getElementById('view-deposits'),
             };
+
+            const navTabDeposits = document.getElementById('nav-tab-deposits');
+            const btnConfirmDeposit = document.getElementById('btn-confirm-deposit');
+            const depositsFilterEmployeeSelect = document.getElementById('deposits-filter-employee');
+            const depositsList = document.getElementById('deposits-list');
+            const emptyDepositsState = document.getElementById('empty-deposits-state');
+            let depositsFilterEmployeeId = ''; // '' = Todos os funcionários
 
             // --- Helpers ---
             const formatCurrency = (value) => {
@@ -730,6 +785,24 @@
                 historyFilterEmployeeSelect.value = stillExists ? previousValue : '';
                 historyFilterEmployeeId = historyFilterEmployeeSelect.value;
                 if (typeof updateFullHistoryUI === 'function') updateFullHistoryUI();
+                renderDepositsFilterOptions();
+            };
+
+            // Keeps the manager-only "Histórico de Depósitos" employee filter in sync with the employee list
+            const renderDepositsFilterOptions = () => {
+                if (!depositsFilterEmployeeSelect) return;
+                const previousValue = depositsFilterEmployeeSelect.value;
+                depositsFilterEmployeeSelect.innerHTML = '<option value="">Todos os funcionários</option>';
+                employees.forEach(emp => {
+                    const opt = document.createElement('option');
+                    opt.value = emp.id;
+                    opt.textContent = emp.name;
+                    depositsFilterEmployeeSelect.appendChild(opt);
+                });
+                const stillExists = previousValue && employees.some(emp => emp.id === previousValue);
+                depositsFilterEmployeeSelect.value = stillExists ? previousValue : '';
+                depositsFilterEmployeeId = depositsFilterEmployeeSelect.value;
+                if (typeof updateDepositsUI === 'function') updateDepositsUI();
             };
 
             const selectEmployee = (employeeId) => {
@@ -914,16 +987,19 @@
                     managerToggleLabel.textContent = 'Gerência (ativa)';
                     btnManagerToggle.classList.add('bg-surface-container-high', 'text-primary', 'font-bold');
                     addEmployeeWrapper.classList.remove('hidden');
-                    // "Vendas Globais" (all employees) is a management-only page
+                    // "Vendas Globais" e "Histórico de Depósitos" (todos os funcionários) são páginas exclusivas da gerência
                     navTabHistory.classList.remove('hidden');
+                    navTabDeposits.classList.remove('hidden');
                 } else {
                     managerToggleIcon.textContent = 'lock';
                     managerToggleLabel.textContent = 'Gerência';
                     btnManagerToggle.classList.remove('bg-surface-container-high', 'text-primary', 'font-bold');
                     addEmployeeWrapper.classList.add('hidden');
                     navTabHistory.classList.add('hidden');
-                    // Employees lose access to the global Sales page: fall back to the sale screen
-                    if (views.history && !views.history.classList.contains('hidden')) {
+                    navTabDeposits.classList.add('hidden');
+                    // Employees lose access to the global Sales/Deposits pages: fall back to the sale screen
+                    if ((views.history && !views.history.classList.contains('hidden')) ||
+                        (views.deposits && !views.deposits.classList.contains('hidden'))) {
                         switchTab('dashboard');
                     }
                 }
@@ -984,7 +1060,7 @@
                     if (!el) return;
                     if (key === tabName) {
                         el.classList.remove('hidden');
-                        el.classList.add(key === 'dashboard' || key === 'history' ? 'flex' : 'flex');
+                        el.classList.add('flex');
                     } else {
                         el.classList.add('hidden');
                     }
@@ -1003,9 +1079,10 @@
             navTabs.forEach(tab => {
                 tab.addEventListener('click', (e) => {
                     e.preventDefault();
-                    if (tab.dataset.tab === 'history' && !isManagerMode) return;
+                    if ((tab.dataset.tab === 'history' || tab.dataset.tab === 'deposits') && !isManagerMode) return;
                     switchTab(tab.dataset.tab);
                     if (tab.dataset.tab === 'history') updateFullHistoryUI();
+                    if (tab.dataset.tab === 'deposits') updateDepositsUI();
                 });
             });
 
@@ -1153,6 +1230,52 @@
                 updateFullHistoryUI();
             });
 
+            // Manager-only "Histórico de Depósitos" page: lists every deposit ever confirmed,
+            // filterable by employee (empty value = todos os funcionários).
+            const updateDepositsUI = () => {
+                depositsList.innerHTML = '';
+
+                const filteredDeposits = depositsFilterEmployeeId
+                    ? deposits.filter(dep => dep.employeeId === depositsFilterEmployeeId)
+                    : deposits;
+
+                if (filteredDeposits.length === 0) {
+                    emptyDepositsState.classList.remove('hidden');
+                    emptyDepositsState.innerHTML = depositsFilterEmployeeId
+                        ? `<span class="material-symbols-outlined text-[48px] mb-sm font-light">savings</span>
+                           <p class="font-body-md text-body-md">Nenhum depósito confirmado ainda para este funcionário.</p>`
+                        : `<span class="material-symbols-outlined text-[48px] mb-sm font-light">savings</span>
+                           <p class="font-body-md text-body-md">Nenhum depósito confirmado ainda.</p>`;
+                    depositsList.classList.add('hidden');
+                    return;
+                }
+
+                emptyDepositsState.classList.add('hidden');
+                depositsList.classList.remove('hidden');
+
+                // Render in reverse order (newest first)
+                [...filteredDeposits].reverse().forEach((dep, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'grid grid-cols-[100px_140px_100px_100px_120px_120px_140px] gap-md items-center py-sm px-md border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors rounded-md animate-entry';
+                    li.style.animationDelay = `${index * 0.05}s`;
+                    li.innerHTML = `
+                        <div class="font-data-mono text-data-mono text-on-surface">#${dep.id}</div>
+                        <div class="font-body-sm text-body-sm text-on-surface truncate" title="${dep.employeeName}">${dep.employeeName}</div>
+                        <div class="font-data-mono text-data-mono text-on-surface-variant text-center">${dep.date}</div>
+                        <div class="font-data-mono text-data-mono text-on-surface-variant text-center">${dep.time}</div>
+                        <div class="font-data-mono text-data-mono text-on-surface-variant text-right">${formatCurrency(dep.totalSales)}</div>
+                        <div class="font-data-mono text-data-mono text-tertiary-container text-right">${formatCurrency(dep.employeeCut)}</div>
+                        <div class="font-data-mono text-data-mono text-primary font-semibold text-right">${formatCurrency(dep.companyAmount)}</div>
+                    `;
+                    depositsList.appendChild(li);
+                });
+            };
+
+            depositsFilterEmployeeSelect.addEventListener('change', () => {
+                depositsFilterEmployeeId = depositsFilterEmployeeSelect.value;
+                updateDepositsUI();
+            });
+
             const updateCommissionUI = (totalSalesDay) => {
                 const rate = parseFloat(inputCommRate.value) || 0;
                 const yourCut = totalSalesDay * (rate / 100);
@@ -1161,7 +1284,66 @@
                 dispTotalSales.textContent = formatCurrency(totalSalesDay);
                 dispYourCut.textContent = formatCurrency(yourCut);
                 dispCompanyCut.textContent = formatCurrency(companyCut);
+
+                // O botão de depósito só faz sentido quando há um funcionário selecionado
+                // e vendas do dia pendentes de depósito.
+                btnConfirmDeposit.disabled = !selectedEmployeeId || totalSalesDay <= 0;
             };
+
+            btnConfirmDeposit.addEventListener('click', async () => {
+                if (!selectedEmployeeId) return;
+
+                const employee = getSelectedEmployee();
+                const employeeSales = salesHistory.filter(sale => sale.employeeId === selectedEmployeeId);
+                if (employeeSales.length === 0) return;
+
+                const totalSales = employeeSales.reduce((sum, sale) => sum + sale.total, 0);
+                const itemsCount = employeeSales.reduce((sum, sale) => sum + sale.itemsCount, 0);
+                const rate = parseFloat(inputCommRate.value) || 0;
+                const employeeCut = totalSales * (rate / 100);
+                const companyAmount = totalSales - employeeCut;
+
+                const confirmMsg = `Confirmar o depósito de ${formatCurrency(companyAmount)} para a empresa?\n\n` +
+                    `Isso vai zerar o histórico de vendas do dia de ${employee ? employee.name : 'este funcionário'} ` +
+                    `e registrar o depósito no histórico da gerência. Essa ação não pode ser desfeita.`;
+                if (!confirm(confirmMsg)) return;
+
+                const now = new Date();
+                const deposit = {
+                    id: depositCounter++,
+                    employeeId: selectedEmployeeId,
+                    employeeName: employee ? employee.name : '—',
+                    date: formatDate(now),
+                    time: formatTime(now),
+                    totalSales,
+                    commissionRate: rate,
+                    employeeCut,
+                    companyAmount,
+                    itemsCount,
+                    saleIds: employeeSales.map(sale => sale.id),
+                };
+
+                btnConfirmDeposit.disabled = true;
+                btnConfirmDeposit.textContent = 'Confirmando...';
+                const result = await api.send('confirmDeposit', { deposit });
+                btnConfirmDeposit.textContent = '';
+                btnConfirmDeposit.innerHTML = `<span class="material-symbols-outlined text-[18px]">savings</span> Confirmar Depósito para a Empresa`;
+
+                if (result.ok || result.offline) {
+                    deposits.push(deposit);
+                    // Remove do histórico local apenas as vendas que entraram neste depósito
+                    salesHistory = salesHistory.filter(sale => !deposit.saleIds.includes(sale.id));
+
+                    updateHistoryUI();
+                    updateFullHistoryUI();
+                    updateDepositsUI();
+                    toast(result.offline ? 'Depósito registrado localmente (planilha não conectada).' : 'Depósito confirmado e histórico do dia zerado.');
+                } else {
+                    btnConfirmDeposit.disabled = !selectedEmployeeId;
+                    alert('Não foi possível registrar o depósito na planilha: ' + (result.error || 'erro desconhecido') + '. Tente novamente.');
+                    toast('Falha ao confirmar depósito.', 'error');
+                }
+            });
 
             // --- Event Listeners ---
 
@@ -1446,12 +1628,17 @@
                 if (Array.isArray(remoteData.sales)) {
                     salesHistory = remoteData.sales;
                 }
+                if (Array.isArray(remoteData.deposits)) {
+                    deposits = remoteData.deposits;
+                }
                 const maxProductNum = products.reduce((max, p) => Math.max(max, parseInt(String(p.id).replace(/\D/g, '')) || 0), 0);
                 productCounter = maxProductNum + 1;
                 const maxEmployeeNum = employees.reduce((max, emp) => Math.max(max, parseInt(String(emp.id).replace(/\D/g, '')) || 0), 0);
                 employeeCounter = maxEmployeeNum + 1;
                 const maxSaleId = salesHistory.reduce((max, s) => Math.max(max, Number(s.id) || 0), 1000);
                 saleCounter = maxSaleId + 1;
+                const maxDepositId = deposits.reduce((max, d) => Math.max(max, Number(d.id) || 0), 0);
+                depositCounter = maxDepositId + 1;
             }
 
             productSearchInput.addEventListener('input', renderProducts);
@@ -1461,9 +1648,11 @@
             renderProducts();
             renderEmployeeList();
             renderHistoryFilterOptions();
+            renderDepositsFilterOptions();
             updateCartUI();
             updateHistoryUI();
             updateFullHistoryUI();
+            updateDepositsUI();
         });
     </script>
 </body></html>
