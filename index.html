@@ -353,6 +353,11 @@
 <div class="font-data-mono text-data-mono text-secondary">TRM-8492</div>
 </div>
 </header>
+<!-- Product Search -->
+<div class="relative mb-sm">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">search</span>
+<input class="w-full bg-surface border border-outline-variant rounded-lg pl-10 pr-3 py-sm font-body-sm text-body-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" id="product-search" placeholder="Buscar produto pelo nome..." type="text"/>
+</div>
 <!-- Product Grid -->
 <div class="overflow-y-auto custom-scrollbar mb-lg pr-1" style="max-height: 38vh;">
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-sm" id="product-grid"></div>
@@ -588,6 +593,7 @@
             const employeeListEl = document.getElementById('employee-list');
 
             const productGrid = document.getElementById('product-grid');
+            const productSearchInput = document.getElementById('product-search');
             const productModal = document.getElementById('product-modal');
             const productModalTitle = document.getElementById('product-modal-title');
             const productFormName = document.getElementById('product-form-name');
@@ -1173,7 +1179,19 @@
             const renderProducts = () => {
                 productGrid.innerHTML = '';
 
-                products.forEach(product => {
+                const searchTerm = productSearchInput.value.trim().toLowerCase();
+                const filteredProducts = searchTerm
+                    ? products.filter(product => product.name.toLowerCase().includes(searchTerm))
+                    : products;
+
+                if (searchTerm && filteredProducts.length === 0) {
+                    const emptyMsg = document.createElement('p');
+                    emptyMsg.className = 'col-span-full text-center text-body-sm text-on-surface-variant py-lg';
+                    emptyMsg.textContent = `Nenhum produto encontrado para "${productSearchInput.value.trim()}".`;
+                    productGrid.appendChild(emptyMsg);
+                }
+
+                filteredProducts.forEach(product => {
                     const qtyId = `qty-${product.id}`;
                     const card = document.createElement('div');
                     card.className = 'bg-surface-container-lowest border border-outline-variant rounded-xl p-xs shadow-sm flex flex-col gap-xs relative group';
@@ -1196,7 +1214,8 @@
                     productGrid.appendChild(card);
                 });
 
-                // Add-product card (manager only)
+                // Add-product card (manager only) — continua aparecendo mesmo durante uma busca,
+                // para a gerência conseguir cadastrar um produto novo a qualquer momento.
                 if (isManagerMode) {
                     const addCard = document.createElement('button');
                     addCard.type = 'button';
@@ -1434,6 +1453,8 @@
                 const maxSaleId = salesHistory.reduce((max, s) => Math.max(max, Number(s.id) || 0), 1000);
                 saleCounter = maxSaleId + 1;
             }
+
+            productSearchInput.addEventListener('input', renderProducts);
 
             // Initialize
             switchTab('dashboard');
