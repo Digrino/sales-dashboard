@@ -437,10 +437,11 @@
 </div>
 </header>
 <div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl flex flex-col overflow-hidden shadow-sm">
-<div class="bg-surface-container-low border-b border-outline-variant px-lg py-sm grid grid-cols-[100px_140px_1fr_120px_140px] gap-md items-center">
+<div class="bg-surface-container-low border-b border-outline-variant px-lg py-sm grid grid-cols-[100px_140px_1fr_100px_90px_140px] gap-md items-center">
 <span class="font-label-caps text-label-caps text-on-surface-variant">Venda</span>
 <span class="font-label-caps text-label-caps text-on-surface-variant">Vendedor</span>
 <span class="font-label-caps text-label-caps text-on-surface-variant">Itens</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-center">Data</span>
 <span class="font-label-caps text-label-caps text-on-surface-variant text-center">Horário</span>
 <span class="font-label-caps text-label-caps text-on-surface-variant text-right">Total</span>
 </div>
@@ -651,8 +652,14 @@
                 return '$' + Number(value).toFixed(2).replace('.', ',');
             };
 
+            // Sempre formatados no fuso de Brasília (America/Sao_Paulo), independente do
+            // fuso horário do dispositivo/navegador usado no terminal de venda.
             const formatTime = (date) => {
-                return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+            };
+
+            const formatDate = (date) => {
+                return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' });
             };
 
             const getSelectedEmployee = () => employees.find(emp => emp.id === selectedEmployeeId) || null;
@@ -1109,12 +1116,13 @@
                 [...filteredHistory].reverse().forEach((sale, index) => {
                     const itemsSummary = sale.items.map(it => `${it.qty}x ${it.name}`).join(', ');
                     const fullLi = document.createElement('li');
-                    fullLi.className = 'grid grid-cols-[100px_140px_1fr_120px_140px] gap-md items-center py-sm px-md border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors rounded-md animate-entry';
+                    fullLi.className = 'grid grid-cols-[100px_140px_1fr_100px_90px_140px] gap-md items-center py-sm px-md border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors rounded-md animate-entry';
                     fullLi.style.animationDelay = `${index * 0.05}s`;
                     fullLi.innerHTML = `
                         <div class="font-data-mono text-data-mono text-on-surface">#${sale.id}</div>
                         <div class="font-body-sm text-body-sm text-on-surface truncate" title="${sale.employeeName}">${sale.employeeName}</div>
                         <div class="font-body-sm text-body-sm text-on-surface-variant truncate" title="${itemsSummary}">${itemsSummary}</div>
+                        <div class="font-data-mono text-data-mono text-on-surface-variant text-center">${sale.date || '—'}</div>
                         <div class="font-data-mono text-data-mono text-on-surface-variant text-center">${sale.time}</div>
                         <div class="font-data-mono text-data-mono text-on-surface font-semibold text-right">${formatCurrency(sale.total)}</div>
                     `;
@@ -1356,12 +1364,14 @@
 
                 const employee = getSelectedEmployee();
                 const saleTotal = currentCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                const now = new Date();
                 
                 const newSale = {
                     id: saleCounter++,
                     total: saleTotal,
                     itemsCount: currentCart.reduce((sum, item) => sum + item.qty, 0),
-                    time: formatTime(new Date()),
+                    time: formatTime(now),
+                    date: formatDate(now),
                     items: [...currentCart],
                     employeeId: selectedEmployeeId,
                     employeeName: employee ? employee.name : '—'
