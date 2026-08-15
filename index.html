@@ -411,7 +411,7 @@
 <div>
 <p class="font-label-caps text-label-caps text-on-surface-variant mb-xs">VALOR TOTAL DA VENDA</p>
 <div class="font-display-lg text-display-lg text-primary tracking-tight" id="display-total">
-                            $ 0,00
+                            R$ 0,00
                         </div>
 </div>
 <button class="bg-primary text-on-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-container hover:text-on-primary-container transition-colors duration-200 rounded-xl px-xl py-md flex items-center justify-center gap-sm font-headline-sm text-headline-sm shadow-sm" disabled="" id="btn-finalize">
@@ -495,16 +495,16 @@
 <div class="flex flex-col gap-sm bg-surface-container-low rounded-lg p-md border border-outline-variant">
 <div class="flex justify-between items-center">
 <span class="font-body-sm text-body-sm text-on-surface-variant">Total em Vendas</span>
-<span class="font-data-mono text-data-mono font-bold text-on-surface" id="disp-total-sales">$ 0,00</span>
+<span class="font-data-mono text-data-mono font-bold text-on-surface" id="disp-total-sales">R$ 0,00</span>
 </div>
 <div class="flex justify-between items-center">
 <span class="font-body-sm text-body-sm text-on-surface-variant">Sua Parte</span>
-<span class="font-data-mono text-data-mono font-bold text-tertiary-container bg-tertiary-fixed px-1 rounded" id="disp-your-cut">$ 0,00</span>
+<span class="font-data-mono text-data-mono font-bold text-tertiary-container bg-tertiary-fixed px-1 rounded" id="disp-your-cut">R$ 0,00</span>
 </div>
 <div class="h-px w-full bg-outline-variant my-xs"></div>
 <div class="flex justify-between items-center">
 <span class="font-body-sm text-body-sm text-on-surface font-semibold">Valor à Empresa</span>
-<span class="font-data-mono text-data-mono font-bold text-primary" id="disp-company-cut">$ 0,00</span>
+<span class="font-data-mono text-data-mono font-bold text-primary" id="disp-company-cut">R$ 0,00</span>
 </div>
 </div>
 </div>
@@ -514,7 +514,7 @@
 <script>
         // --- Integração com Google Sheets (via Google Apps Script Web App) ---
         // Cole aqui a URL da Web App depois de publicar o Apps Script (ver instruções fornecidas).
-        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyVki77oXob_ZIxLCsLo4nQOccc9dqAp9-6lrixLuIHz7u6hDmJAX4p4DvEsc1LMZuq/exec';
+        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxSMeMJKQqSypZdEajx0f-MpPoWLgRYX5t00IcZh-PKUQslamNmRGuIHOXEdsGKLbgt/exec';
 
         const api = {
             async load() {
@@ -648,7 +648,7 @@
 
             // --- Helpers ---
             const formatCurrency = (value) => {
-                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+                return '$' + Number(value).toFixed(2).replace('.', ',');
             };
 
             const formatTime = (date) => {
